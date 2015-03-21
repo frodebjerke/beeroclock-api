@@ -3,41 +3,29 @@ package thirsty
 import (
     "net/http"
     "github.com/frodetbj/beeroclock-api/redisclient"
+    "github.com/frodetbj/beeroclock-api/utils"
     "fmt"
     "encoding/json"
 )
 
-type ThirstyDude struct {
-    Username string
-}
-
-func response(w http.ResponseWriter, statuscode int, payload interface{}) error {
-    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-    w.WriteHeader(statuscode)
-    if err := json.NewEncoder(w).Encode(payload); err != nil {
-        return err
-    }
-
-    return nil
-}
-
 func Join(w http.ResponseWriter, r *http.Request) {
-    var thirstydude ThirstyDude
+    var thirstydude Dude
     decoder := json.NewDecoder(r.Body)
     err := decoder.Decode(&thirstydude)
     if err != nil {
+        utils.Response(w, 400, err)
         panic(err)
     }
 
     if thirstydude.Username == "" {
-        response(w, 400, "Username missing")
+        utils.Response(w, 400, "Username missing")
     } else {
         client := redisclient.Connection()
-        err = client.Cmd("SADD", "thirstydudes", thirstydude).Err
+        err = client.Cmd("SADD", "thirstydudes", thirstydude.Username).Err
         if err != nil {
             fmt.Println("Redis cmd fail ", err)
         }
 
-        response(w, 200, thirstydude)
+        utils.Response(w, 200, thirstydude)
     }
 }
